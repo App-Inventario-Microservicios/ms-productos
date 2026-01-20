@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_productos
+    restart: always
+    environment:
+      POSTGRES_USER: usuario_productos
+      POSTGRES_PASSWORD: productos123
+      POSTGRES_DB: db_productos
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_productos_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_productos_data:
