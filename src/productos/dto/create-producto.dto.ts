@@ -9,4 +9,9 @@ export class CreateProductoDto {
   @Min(0)
   @Type(() => Number)
   public precio: number;
+
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  public stock: number;
 }

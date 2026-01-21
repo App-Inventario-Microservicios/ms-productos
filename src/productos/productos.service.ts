@@ -1,14 +1,9 @@
-import {
-  BadRequestException,
-  HttpStatus,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Producto } from './entities/producto.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { PaginationDto } from 'src/common';
 import { RpcException } from '@nestjs/microservices';
 
@@ -26,22 +21,31 @@ export class ProductosService {
   }
 
   async findAll(PaginationDto: PaginationDto) {
-    const { pagina = 1, limite = 10 } = PaginationDto;
-    const totalPaginas = await this.productoRepo.count({
-      where: { disponible: true },
-    });
-    const ultimaPagina = Math.ceil(totalPaginas / limite);
+    const { pagina = 1, limite = 10, buscar = '' } = PaginationDto;
+
+    const queryBuilder = this.productoRepo
+      .createQueryBuilder('producto')
+      .where('producto.disponible = :disponible', { disponible: true });
+
+    if (buscar) {
+      queryBuilder.andWhere('producto.nombre ILIKE :buscar', {
+        buscar: `%${buscar}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy('producto.id', 'ASC')
+      .skip((pagina - 1) * limite)
+      .take(limite);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: await this.productoRepo.find({
-        skip: (pagina - 1) * limite,
-        take: limite,
-        where: { disponible: true },
-      }),
+      data,
       meta: {
-        total: totalPaginas,
-        pagina: pagina,
-        ultimaPagina: ultimaPagina,
+        total,
+        pagina,
+        ultimaPagina: Math.ceil(total / limite),
       },
     };
   }
